@@ -31,9 +31,11 @@ export default function Dashboard() {
   if (!data) return null;
 
   const projectsCreated = data.projectsCreated || [];
+  const projectsJoined = data.projectsJoined || [];
+  const allProjects = [...projectsCreated, ...projectsJoined];
   const recentTasks = data.recentTasks || [];
   const projectsJoinedCount = data.projectsJoinedCount || data.projectsJoined?.length || 0;
-  const pendingTasksCount = data.pendingTasksCount || 0;
+  const pendingTasksCount = data.taskStats?.pending || data.pendingTasksCount || 0;
 
   return (
     <div className="space-y-8">
@@ -47,12 +49,12 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
-          <div className="text-sm font-medium text-gray-500 mb-1">Projects Created</div>
-          <div className="text-3xl font-bold text-gray-900">{projectsCreated.length}</div>
+          <div className="text-sm font-medium text-gray-500 mb-1">Total Projects</div>
+          <div className="text-3xl font-bold text-gray-900">{allProjects.length}</div>
         </Card>
         <Card>
-          <div className="text-sm font-medium text-gray-500 mb-1">Projects Joined</div>
-          <div className="text-3xl font-bold text-gray-900">{projectsJoinedCount}</div>
+          <div className="text-sm font-medium text-gray-500 mb-1">Completed Tasks</div>
+          <div className="text-3xl font-bold text-gray-900">{data.taskStats?.completed || 0}</div>
         </Card>
         <Card>
           <div className="text-sm font-medium text-gray-500 mb-1">Pending Tasks</div>
@@ -64,13 +66,13 @@ export default function Dashboard() {
         {/* My Projects */}
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">My Projects</h2>
-          {projectsCreated.length === 0 ? (
+          {allProjects.length === 0 ? (
             <Card className="text-center py-8">
               <p className="text-gray-500 mb-4">You haven't joined or been assigned any projects yet.</p>
             </Card>
           ) : (
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 divide-y divide-gray-100">
-              {projectsCreated.map(project => (
+              {allProjects.map(project => (
                 <Link 
                   key={project._id || project.id} 
                   to={`/projects/${project._id || project.id}`}

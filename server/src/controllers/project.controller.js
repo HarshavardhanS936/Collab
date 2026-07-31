@@ -48,6 +48,7 @@ export const getProjects = asyncHandler(async (req, res, next) => {
   // Execute query
   const projects = await Project.find(query)
     .populate('createdBy', 'name')
+    .populate('members', '_id')
     .skip(skip)
     .limit(limitNumber)
     .sort({ createdAt: -1 });
@@ -84,12 +85,24 @@ export const updateProject = asyncHandler(async (req, res, next) => {
     return next(new ApiError(404, 'Project not found'));
   }
 
+  const isOwner = project.createdBy.toString() === req.user._id.toString();
+  const isAdmin = req.user.role === 'ADMIN';
+  const isMember = project.members.some(m => m.toString() === req.user._id.toString());
+
   // Check ownership
-  if (project.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'ADMIN') {
+  if (!isOwner && !isAdmin) {
+    if (isMember) {
+      // Members can ONLY update the submission link
+      if (req.body.submissionLink !== undefined) {
+        project.submissionLink = req.body.submissionLink;
+        await project.save();
+        return apiResponse(res, 200, 'Project submission updated', { project });
+      }
+    }
     return next(new ApiError(403, 'Not authorized to update this project'));
   }
 
-  const { title, description, domain, requiredSkills, deadline, teamSize } = req.body;
+  const { title, description, domain, requiredSkills, deadline, teamSize, submissionLink } = req.body;
 
   if (title !== undefined) project.title = title;
   if (description !== undefined) project.description = description;
@@ -97,6 +110,7 @@ export const updateProject = asyncHandler(async (req, res, next) => {
   if (requiredSkills !== undefined) project.requiredSkills = requiredSkills;
   if (deadline !== undefined) project.deadline = deadline;
   if (teamSize !== undefined) project.teamSize = teamSize;
+  if (submissionLink !== undefined) project.submissionLink = submissionLink;
 
   await project.save(); // Utilizing .save() properly triggers all schema validators
 

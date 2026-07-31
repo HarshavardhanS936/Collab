@@ -5,25 +5,32 @@ import { ApiError } from '../utils/apiError.js';
 import { apiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
+import { JoinRequest } from '../models/JoinRequest.js';
+
 export const getDashboardStats = asyncHandler(async (req, res, next) => {
   const totalUsers = await User.countDocuments({ role: 'USER' });
   const totalProjects = await Project.countDocuments();
-  const completedTasks = await Task.countDocuments({ status: 'completed' });
-  const pendingTasks = await Task.countDocuments({ status: 'pending' });
+  const pendingRequests = await JoinRequest.countDocuments({ status: 'pending' });
 
   const latestRegistrations = await User.find({ role: 'USER' })
     .sort({ createdAt: -1 })
     .limit(5)
     .select('-password');
 
+  const pendingRequestsList = await JoinRequest.find({ status: 'pending' })
+    .populate('requestedBy', 'name email')
+    .populate('project', 'title')
+    .sort({ createdAt: -1 })
+    .limit(5);
+
   return apiResponse(res, 200, 'Admin dashboard stats retrieved successfully', {
     stats: {
       totalUsers,
       totalProjects,
-      completedTasks,
-      pendingTasks
+      pendingRequests
     },
-    latestRegistrations
+    latestRegistrations,
+    pendingRequestsList
   });
 });
 
@@ -51,5 +58,15 @@ export const deleteUser = asyncHandler(async (req, res, next) => {
   }
 
   await User.findByIdAndDelete(id);
+
+  // Cascade cleanup: Remove user from all projects' members array
+  await Project.updateMany(
+    { members: id },
+    { $pull: { members: id } }
+  );
+
+  // Cascade cleanup: Delete all join requests made by this user
+  await JoinRequest.deleteMany({ requestedBy: id });
+
   return apiResponse(res, 200, 'User deleted successfully');
 });

@@ -35,6 +35,26 @@ const projectSchema = new mongoose.Schema({
     min: [2, 'Team size must be at least 2'],
     max: [10, 'Team size cannot exceed 10']
   },
+  joinRequests: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    message: String,
+    appliedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  submissionLink: {
+    type: String,
+    default: ''
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -49,7 +69,7 @@ const projectSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-});
+}, { timestamps: true });
 
 // Create text index on title and description
 projectSchema.index({ title: 'text', description: 'text' });

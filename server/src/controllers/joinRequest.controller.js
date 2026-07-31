@@ -25,7 +25,17 @@ export const sendJoinRequest = asyncHandler(async (req, res, next) => {
 
   // Reject if the project's members array has already reached teamSize
   if (project.members.length >= project.teamSize) {
-    return next(new ApiError(400, 'This project has already reached its team size limit'));
+    // Double check by populating to see if there are deleted ghost members
+    await project.populate('members', '_id');
+    const validMembersCount = project.members.filter(m => m !== null).length;
+    
+    if (validMembersCount >= project.teamSize) {
+      return next(new ApiError(400, 'Team size limit reached for this project'));
+    } else {
+      // Self-heal: Clean up ghost members from the database
+      project.members = project.members.filter(m => m !== null).map(m => m._id);
+      await project.save();
+    }
   }
 
   try {

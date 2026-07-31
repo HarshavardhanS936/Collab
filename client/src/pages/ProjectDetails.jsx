@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchProjectById, deleteProject } from '../api/project.api';
+import { fetchProjectById, deleteProject, updateProject } from '../api/project.api';
 import { sendJoinRequest, fetchJoinRequests, acceptJoinRequest, rejectJoinRequest } from '../api/joinRequest.api';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
@@ -29,6 +29,11 @@ export default function ProjectDetails() {
   const [isRequesting, setIsRequesting] = useState(false);
   const [hasRequested, setHasRequested] = useState(false);
 
+  // Project Submission State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionUrl, setSubmissionUrl] = useState('');
+  const [isEditingSubmission, setIsEditingSubmission] = useState(false);
+
   useEffect(() => {
     loadProject();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -41,6 +46,9 @@ export default function ProjectDetails() {
       const res = await fetchProjectById(id);
       const data = res?.data?.project || res?.project || res?.data || res;
       setProject(data);
+      if (data.submissionLink) {
+        setSubmissionUrl(data.submissionLink);
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load project details.');
     } finally {
@@ -51,6 +59,7 @@ export default function ProjectDetails() {
   const getUserId = () => user?.id || user?._id;
   const getOwnerId = () => project?.createdBy?.id || project?.createdBy?._id || project?.createdBy;
 
+  const isAdmin = user?.role === 'ADMIN';
   const isOwner = !!(project && user && getOwnerId() === getUserId());
   
   const isMember = !!(project && user && (
@@ -59,11 +68,11 @@ export default function ProjectDetails() {
   ));
 
   useEffect(() => {
-    if (isOwner) {
+    if (isOwner || isAdmin) {
       loadJoinRequests();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOwner, id]);
+  }, [isOwner, isAdmin, id]);
 
   const loadJoinRequests = async () => {
     setIsFetchingRequests(true);
@@ -87,7 +96,7 @@ export default function ProjectDetails() {
       showToast("Join request sent successfully!", "success");
     } catch (err) {
       // If error is 400, assume request already sent or user is invalid
-      if (err.response?.status === 400 && err.response?.data?.message?.toLowerCase().includes('already')) {
+      if (err.response?.status === 400 && err.response?.data?.message?.toLowerCase().includes('already sent')) {
         setHasRequested(true);
       } else {
         setError(err.response?.data?.message || err.response?.data?.error || 'Failed to send join request.');
@@ -128,6 +137,20 @@ export default function ProjectDetails() {
       } catch (err) {
         setError(err.response?.data?.message || err.response?.data?.error || 'Failed to delete project.');
       }
+    }
+  };
+
+  const handleSaveSubmission = async () => {
+    setIsSubmitting(true);
+    try {
+      await updateProject(id, { submissionLink: submissionUrl });
+      setProject(prev => ({ ...prev, submissionLink: submissionUrl }));
+      setIsEditingSubmission(false);
+      showToast("Project submission saved successfully!", "success");
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to save submission.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -216,8 +239,8 @@ export default function ProjectDetails() {
       
       {error && <ErrorMessage message={error} />}
 
-      {/* Owner View: Pending Requests */}
-      {isOwner && (
+      {/* Owner & Admin View: Pending Requests */}
+      {(isOwner || isAdmin) && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Pending Join Requests</h2>
           <ErrorMessage message={requestError} />
@@ -297,6 +320,80 @@ export default function ProjectDetails() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Project Submission Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-indigo-100 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          Project Submission
+        </h2>
+        
+        {project.submissionLink && !isEditingSubmission ? (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+            <div>
+              <p className="text-sm text-indigo-900 font-medium mb-1">Final Project Work</p>
+              <a 
+                href={project.submissionLink.startsWith('http') ? project.submissionLink : `https://${project.submissionLink}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-800 hover:underline break-all"
+              >
+                {project.submissionLink}
+              </a>
+            </div>
+            {isMember && !isAdmin && (
+              <button 
+                onClick={() => setIsEditingSubmission(true)}
+                className="mt-3 sm:mt-0 px-4 py-2 text-sm font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
+              >
+                Edit Submission
+              </button>
+            )}
+          </div>
+        ) : isMember && !isAdmin ? (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Submit the link to your final project (e.g., GitHub repo, Google Drive, Figma design). This will be visible to all members and admins.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input 
+                type="url" 
+                placeholder="https://github.com/..." 
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                value={submissionUrl}
+                onChange={(e) => setSubmissionUrl(e.target.value)}
+              />
+              <div className="flex gap-2">
+                {isEditingSubmission && (
+                  <button 
+                    onClick={() => {
+                      setIsEditingSubmission(false);
+                      setSubmissionUrl(project.submissionLink || '');
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <Button 
+                  onClick={handleSaveSubmission}
+                  isLoading={isSubmitting}
+                  disabled={!submissionUrl.trim()}
+                  className="w-full sm:w-auto px-6 bg-indigo-600 hover:bg-indigo-700"
+                >
+                  Save Submission
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm italic py-2">
+            The project team has not submitted the final work yet.
+          </p>
+        )}
       </div>
 
       {/* Embed Tasks Section (Mocked for now) */}
