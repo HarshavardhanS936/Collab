@@ -17,7 +17,12 @@ export default function ProjectChat({ projectId, isMember }) {
   const loadMessages = async () => {
     try {
       const res = await fetchProjectMessages(projectId);
-      setMessages(res.data?.messages || res.messages || res.data || []);
+      let msgs = res.data?.data?.messages || res.data?.messages || res.messages || res.data || [];
+      if (!Array.isArray(msgs)) {
+        msgs = msgs.messages || msgs.data || [];
+        if (!Array.isArray(msgs)) msgs = [];
+      }
+      setMessages(msgs);
       setError(null);
     } catch (err) {
       if (err.response?.status !== 403) {
@@ -86,7 +91,7 @@ export default function ProjectChat({ projectId, isMember }) {
               No messages yet. Say hello to your team!
             </div>
           ) : (
-            messages.map((msg) => {
+            (Array.isArray(messages) ? messages : []).map((msg) => {
               const currentUserId = user?._id || user?.id;
               const senderId = msg.sender?._id || msg.sender?.id || msg.sender;
               const isMine = currentUserId === senderId;

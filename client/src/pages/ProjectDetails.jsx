@@ -45,7 +45,8 @@ export default function ProjectDetails() {
     setError(null);
     try {
       const res = await fetchProjectById(id);
-      const data = res?.data?.project || res?.project || res?.data || res;
+      let data = res?.data?.data?.project || res?.data?.project || res?.project || res?.data || res;
+      if (data && data.project) data = data.project;
       setProject(data);
       if (data.submissionLink) {
         setSubmissionUrl(data.submissionLink);
@@ -199,7 +200,7 @@ export default function ProjectDetails() {
         <div className="mb-6">
           <h3 className="text-sm font-medium text-gray-700 mb-2">Required Skills</h3>
           <div className="flex flex-wrap gap-2">
-            {(project.requiredSkills || []).map((skill, idx) => (
+            {(Array.isArray(project.requiredSkills) ? project.requiredSkills : []).map((skill, idx) => (
               <span key={idx} className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                 {skill}
               </span>
@@ -252,7 +253,7 @@ export default function ProjectDetails() {
             <p className="text-gray-500 text-sm">No pending requests at the moment.</p>
           ) : (
             <div className="divide-y divide-gray-100">
-              {joinRequests.map(req => {
+              {(Array.isArray(joinRequests) ? joinRequests : []).map(req => {
                 const reqUser = req.requestedBy || req.user || req.requester || {}; // depending on population
                 const reqId = req._id || req.id;
                 return (
@@ -309,7 +310,7 @@ export default function ProjectDetails() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Team Members</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {(project.members || []).map(member => (
+          {(Array.isArray(project.members) ? project.members : []).map(member => (
             <div key={member._id || member.id || member} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
               <div className="h-10 w-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold">
                 {(member.name || 'M').charAt(0).toUpperCase()}

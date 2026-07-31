@@ -39,18 +39,18 @@ export default function ProjectTasks({ projectId, projectTitle, isMember, isOwne
       setIsLoading(true);
       setError(null);
       const res = await fetchProjectTasks(projectId);
-      const data = res.data || res;
+      let tasksData = res.data?.data?.tasks || res.data?.tasks || res.tasks || res.data || res;
+      if (tasksData.tasks) tasksData = tasksData.tasks;
       
-      if (data.tasks && (data.tasks.pending || data.tasks.completed)) {
-        setPending(data.tasks.pending || []);
-        setCompleted(data.tasks.completed || []);
-      } else if (data.pending || data.completed) {
-        setPending(data.pending || []);
-        setCompleted(data.completed || []);
-      } else if (Array.isArray(data.tasks || data)) {
-        const tasksArr = data.tasks || data;
-        setPending(tasksArr.filter(t => t.status !== 'completed'));
-        setCompleted(tasksArr.filter(t => t.status === 'completed'));
+      if (tasksData.pending || tasksData.completed) {
+        setPending(Array.isArray(tasksData.pending) ? tasksData.pending : []);
+        setCompleted(Array.isArray(tasksData.completed) ? tasksData.completed : []);
+      } else if (Array.isArray(tasksData)) {
+        setPending(tasksData.filter(t => t.status !== 'completed'));
+        setCompleted(tasksData.filter(t => t.status === 'completed'));
+      } else {
+        setPending([]);
+        setCompleted([]);
       }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load tasks.');
@@ -309,7 +309,7 @@ export default function ProjectTasks({ projectId, projectTitle, isMember, isOwne
             {pending.length === 0 && !showAddForm ? (
               <p className="text-gray-500 text-sm italic py-4">No pending tasks.</p>
             ) : (
-              pending.map(task => renderTask(task, true))
+              (Array.isArray(pending) ? pending : []).map(task => renderTask(task, true))
             )}
           </div>
         </div>
@@ -321,7 +321,7 @@ export default function ProjectTasks({ projectId, projectTitle, isMember, isOwne
             {completed.length === 0 ? (
               <p className="text-gray-500 text-sm italic py-4">No completed tasks.</p>
             ) : (
-              completed.map(task => renderTask(task, false))
+              (Array.isArray(completed) ? completed : []).map(task => renderTask(task, false))
             )}
           </div>
         </div>

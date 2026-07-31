@@ -18,9 +18,11 @@ export default function AdminProjects() {
       setIsLoading(true);
       // Fetching all projects, ideally backend can filter by creator
       const res = await fetchProjects({ limit: 100 });
-      const data = res.data || res;
+      let data = res.data?.data || res.data || res;
+      let allProjects = data.projects || data || [];
+      if (!Array.isArray(allProjects)) allProjects = [];
       // Filter locally for now to show only projects this admin created
-      const adminProjects = (data.projects || []).filter(p => p.createdBy?._id === user?.id || p.createdBy === user?.id || p.createdBy?.id === user?.id);
+      const adminProjects = allProjects.filter(p => p.createdBy?._id === user?.id || p.createdBy === user?.id || p.createdBy?.id === user?.id);
       setProjects(adminProjects);
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load projects.');
@@ -72,7 +74,7 @@ export default function AdminProjects() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {projects.map(project => (
+              {(Array.isArray(projects) ? projects : []).map(project => (
                 <tr key={project._id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{project.title}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{project.domain}</td>

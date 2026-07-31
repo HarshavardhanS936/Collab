@@ -54,8 +54,9 @@ export default function Projects() {
       });
       
       // Handle variations in backend response format
-      const data = res.data || res;
-      setProjects(data.projects || data.data || []);
+      const data = res.data?.data || res.data || res;
+      let p = data.projects || data || [];
+      setProjects(Array.isArray(p) ? p : []);
       setTotalPages(data.totalPages || data.pagination?.totalPages || 1);
       
     } catch (err) {
@@ -135,7 +136,7 @@ export default function Projects() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map(project => (
+            {(Array.isArray(projects) ? projects : []).map(project => (
               <Link 
                 key={project._id || project.id} 
                 to={`/projects/${project._id || project.id}`}
@@ -155,7 +156,7 @@ export default function Projects() {
                   </h3>
                   <div className="flex-grow">
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {(project.requiredSkills || []).slice(0, 3).map((s, idx) => (
+                      {(Array.isArray(project.requiredSkills) ? project.requiredSkills : []).slice(0, 3).map((s, idx) => (
                         <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
                           {s}
                         </span>
