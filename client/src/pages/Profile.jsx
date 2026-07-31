@@ -401,9 +401,13 @@ export default function Profile() {
             
             {/* User Info Header */}
             <div className="p-6 flex flex-col items-center border-b border-gray-100 bg-gray-50">
-              <div className="h-24 w-24 rounded-full bg-slate-800 text-white flex items-center justify-center text-4xl font-bold shadow-sm mb-4">
-                {(profile.name || 'U').charAt(0).toUpperCase()}
-              </div>
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile.name} className="h-24 w-24 rounded-full shadow-sm mb-4 bg-white p-1 border border-gray-200" />
+              ) : (
+                <div className="h-24 w-24 rounded-full bg-slate-800 text-white flex items-center justify-center text-4xl font-bold shadow-sm mb-4">
+                  {(profile.name || 'U').charAt(0).toUpperCase()}
+                </div>
+              )}
               <h2 className="text-xl font-bold text-gray-900 text-center">{profile.name}</h2>
               <p className="text-xs font-medium text-gray-500 mt-1 uppercase tracking-wider">ProjectHub ID: {profile.id?.substring(0, 8) || 'N/A'}</p>
             </div>

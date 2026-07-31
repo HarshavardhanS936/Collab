@@ -9,6 +9,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import ProjectTasks from '../components/ProjectTasks';
+import ProjectChat from '../components/ProjectChat';
 
 export default function ProjectDetails() {
   const { id } = useParams();
@@ -396,8 +397,11 @@ export default function ProjectDetails() {
         )}
       </div>
 
-      {/* Embed Tasks Section (Mocked for now) */}
+      {/* Embed Tasks Section */}
       <ProjectTasks projectId={id} projectTitle={project.title} isMember={isMember} isOwner={isOwner} />
+
+      {/* Embed Chat Section */}
+      <ProjectChat projectId={id} isMember={isMember} />
     </div>
   );
 }

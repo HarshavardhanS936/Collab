@@ -27,4 +27,8 @@ router.get('/:id/join-requests', protect, getProjectJoinRequests);
 router.post('/:id/tasks', protect, isProjectMember, createTask);
 router.get('/:id/tasks', protect, isProjectMember, getProjectTasks);
 
+// Nested Message Routes
+import messageRoutes from './message.routes.js';
+router.use('/:projectId/messages', messageRoutes);
+
 export default router;

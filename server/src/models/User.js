@@ -41,6 +41,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  avatarUrl: {
+    type: String,
+    default: function() {
+      // Generate a default DiceBear avatar based on the user's name
+      // We'll replace spaces with pluses for the URL
+      const formattedName = this.name ? this.name.replace(/\s+/g, '+') : 'User';
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${formattedName}&backgroundColor=6366f1,3b82f6,8b5cf6&textColor=ffffff`;
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
