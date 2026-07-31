@@ -29,7 +29,14 @@ app.use(helmet({
   crossOriginResourcePolicy: false, // allow serving static files
 }));
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: function (origin, callback) {
+    // Allow any Vercel preview domain, localhost, or the exact CLIENT_URL
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost') || origin === env.CLIENT_URL) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
